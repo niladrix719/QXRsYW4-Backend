@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
@@ -24,10 +26,23 @@ func main() {
 
 	// Configure CORS
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:5173"} // Update this with your Vue.js frontend URL
+	config.AllowOrigins = []string{
+		"http://localhost:5173",
+		"http://127.0.0.1:5173",
+		"http://localhost",
+		"http://localhost:80",
+		"http://host.docker.internal",
+		"http://host.docker.internal:80",
+	}
 	config.AllowCredentials = true
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	r.Use(cors.New(config))
+
+	// health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// Auth routes
 	auth := r.Group("/api/auth")
@@ -36,7 +51,11 @@ func main() {
 		auth.POST("/register", handleRegister)
 	}
 
-	r.Run(":8080")
+	// Log that server is starting
+	fmt.Println("Server starting on http://0.0.0.0:8080")
+	if err := r.Run("0.0.0.0:8080"); err != nil {
+		log.Fatal("Failed to start server: ", err)
+	}
 }
 
 func handleLogin(c *gin.Context) {
