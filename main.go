@@ -14,13 +14,10 @@ type LoginRequest struct {
 
 type User struct {
 	Username string `json:"username"`
-	Password string `json:"password"` // In production, never store plain passwords
+	Password string `json:"password"`
 }
 
-// Mock user database - In production, use a real database
-var users = []User{
-	{Username: "admin", Password: "admin123"},
-}
+var users = []User{}
 
 func main() {
 	r := gin.Default()
