@@ -7,18 +7,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.1'
 
+      - name: Set Up Go Modules
+        run: |
+          go mod tidy
+          go mod download
+
       - name: Find New Tests
         id: find_tests
         run: |
           git fetch origin main
-          NEW_TESTS=$(git diff origin/main -- '*test.go' | grep -E '^\+' | grep -E 'func Test' | sed -E 's/.*func (Test[^(]+).*/\1/')
+          NEW_TESTS=$(git diff origin/main -- '*_test.go' | grep -E '^\+' | grep -E 'func Test' | sed -E 's/.*func (Test[^(]+).*/\1/' | sort -u)
 
           if [ -z "$NEW_TESTS" ]; then
             echo "❌ No new tests found."
@@ -33,10 +39,10 @@ jobs:
         if: env.found == 'true'
         run: |
           while IFS= read -r test; do
-            package=$(grep -rl "$test" --include="*_test.go" | xargs dirname | uniq)  # Identify the package
-            echo "Running stress test for $test in package $package"
+            package=$(go list ./... | grep -F $(grep -rl "$test" --include="*_test.go" | xargs dirname | uniq))
+            echo "🔄 Running stress test for $test in package $package"
 
             for i in {1..10}; do
-              go test -run "^$test$" "$package" || exit 1  # Run only for the identified package
+              go test -run "^$test$" "$package" || exit 1
             done
           done < new_tests.txt
