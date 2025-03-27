@@ -1,0 +1,42 @@
+name: Stress Test New Go Tests
+
+on: [pull_request]
+
+jobs:
+  stress-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.1'
+
+      - name: Find New Tests
+        id: find_tests
+        run: |
+          git fetch origin main
+          NEW_TESTS=$(git diff origin/main -- '*.go' | grep -E '^\+' | grep -E 'func Test' | awk '{print $3}')
+
+          if [ -z "$NEW_TESTS" ]; then
+            echo "❌ No new tests found."
+            echo "found=false" >> $GITHUB_ENV
+          else
+            echo "✅ New tests found: $NEW_TESTS"
+            echo "$NEW_TESTS" > new_tests.txt
+            echo "found=true" >> $GITHUB_ENV
+          fi
+
+      - name: Stress Test New Tests
+        if: env.found == 'true'
+        run: |
+          while IFS= read -r test; do
+            package=$(grep -rl "$test" --include="*_test.go" | xargs dirname | uniq)  # Identify the package
+            echo "Running stress test for $test in package $package"
+
+            for i in {1..10}; do
+              go test -run "^$test$" "$package" || exit 1  # Run only for the identified package
+            done
+          done < new_tests.txt
