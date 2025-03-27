@@ -54,7 +54,13 @@ jobs:
 
               if echo "$OUTPUT" | grep -q "FAIL"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
-                STACKTRACE+="$(echo "$OUTPUT" | awk '/--- FAIL/,/FAIL    /')\n"
+
+                # Capture full error messages with file and line numbers
+                TEST_ERRORS=$(echo "$OUTPUT" | awk '/--- FAIL/ {flag=1} flag' | sed '/FAIL    /q')
+                LINE_NUMBERS=$(echo "$OUTPUT" | grep -E '(_test.go:[0-9]+)')
+
+                # Append to stack trace
+                STACKTRACE+="\n$TEST_ERRORS\n$LINE_NUMBERS\n"
               else
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               fi
