@@ -1,10 +1,8 @@
-// main.go
 package main
 
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"QXRsYW4-Backend/middleware"
 	"QXRsYW4-Backend/router"
@@ -18,12 +16,6 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file")
-	}
-
-	// Ensure JWT_SECRET is set
-	if os.Getenv("JWT_SECRET") == "" {
-		log.Fatal("JWT_SECRET environment variable must be set")
-		return
 	}
 
 	r := gin.Default()
