@@ -1,0 +1,36 @@
+# check if gotests is installed
+if ! command -v gotests &> /dev/null; then
+    echo "❌ error: gotests is not installed."
+    echo "➡️  install it with: go install github.com/cweill/gotests/gotests@latest"
+    exit 1  # prevent commit
+fi
+
+# find all newly added/modified .go files
+changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' | grep -v '_test.go')
+
+for file in $changed_files; do
+    test_file="${file%.*}_test.go"
+    
+    # generate test file if it doesn't exist
+    if [ ! -f "$test_file" ]; then
+        echo "generating test for $file -> $test_file"
+        if ! gotests -all -w "$file"; then
+            echo "❌ test generation failed. fix errors before committing."
+            exit 1  # prevent commit
+        fi
+        echo "⚠️  test file $test_file generated. please complete todos before committing."
+        echo "🔴 stopping commit. manually add the test file after review."
+        exit 1  # prevent commit
+    fi
+done
+
+# Check for test files
+TEST_FILES=$(git diff --cached --name-only | grep '_test.go' || true)
+# Check for TODOs
+TODO_CHECK=$(echo "$TEST_FILES" | xargs grep -i "todo" || true)
+
+# Block commit if TODOs are found
+if [ -n "$TODO_CHECK" ]; then
+    echo "❌ Commit blocked: Test files still contain TODOs."
+    exit 1
+fi
