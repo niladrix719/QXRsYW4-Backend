@@ -23,13 +23,23 @@ jobs:
           go mod tidy
           go mod download
 
+      - name: Collect Test Names
+        run: |
+          echo "🔄 Running all tests once to collect test names..."
+          go test -list . ./... | grep '^Test' > test_list.txt || true
+
+          if [ ! -s test_list.txt ]; then
+            echo "❌ No tests found. Exiting..."
+            exit 1
+          fi
+
+          echo "✅ Collected test names:"
+          cat test_list.txt
+
       - name: Run Flaky Test Detection
         run: |
           LOG_FILE=flaky_tests.log
           > "$LOG_FILE"  # Clear log file
-
-          echo "🔄 Running all tests once to collect test names..."
-          go test -list . ./... | grep '^Test' > test_list.txt
 
           echo "🔍 Running each test 10 times to detect flakiness..."
           while IFS= read -r test; do
@@ -37,8 +47,9 @@ jobs:
             SUCCESS_COUNT=0
             STACKTRACE=""
 
+            echo "➡️ Running test: $test"
             for i in {1..10}; do
-              OUTPUT=$(go test -run "^$test$" ./... 2>&1)
+              OUTPUT=$(go test -run "^$test$" ./... 2>&1 || true)
               if echo "$OUTPUT" | grep -q "FAIL"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
                 STACKTRACE="$OUTPUT"  # Capture failure details
