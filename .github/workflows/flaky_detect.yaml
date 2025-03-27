@@ -2,7 +2,7 @@ name: Detect Flaky Tests
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # Runs daily at midnight
   workflow_dispatch:
 
 jobs:
@@ -28,9 +28,10 @@ jobs:
           LOG_FILE=flaky_tests.log
           > "$LOG_FILE"  # Clear log file
 
-          echo "🔄 Running all tests multiple times to detect flakiness..."
-          go test ./... > full_test_output.log 2>&1 || true  # Capture full output
+          echo "🔄 Running all tests once to collect test names..."
+          go test -list . ./... | grep '^Test' > test_list.txt
 
+          echo "🔍 Running each test 10 times to detect flakiness..."
           while IFS= read -r test; do
             FAIL_COUNT=0
             SUCCESS_COUNT=0
@@ -40,7 +41,7 @@ jobs:
               OUTPUT=$(go test -run "^$test$" ./... 2>&1)
               if echo "$OUTPUT" | grep -q "FAIL"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
-                STACKTRACE="$OUTPUT"  # Capture stack trace of failure
+                STACKTRACE="$OUTPUT"  # Capture failure details
               else
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               fi
@@ -48,10 +49,10 @@ jobs:
 
             if [[ "$FAIL_COUNT" -gt 0 && "$SUCCESS_COUNT" -gt 0 ]]; then
               echo "🚨 Flaky Test Detected: $test (Failures: $FAIL_COUNT/10)" >> "$LOG_FILE"
-              echo "Stack Trace:\n$STACKTRACE" >> "$LOG_FILE"
+              echo -e "Stack Trace:\n$STACKTRACE" >> "$LOG_FILE"
               echo "----------------------------------" >> "$LOG_FILE"
             fi
-          done < <(grep -oP 'func \KTest\w+' full_test_output.log | sort -u)
+          done < test_list.txt
 
       - name: Send Flaky Test Report to Discord
         if: always()
@@ -61,4 +62,3 @@ jobs:
             curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "${{ secrets.DISCORD_WEBHOOK }}"
           else
             echo "✅ No flaky tests detected."
-          fi
