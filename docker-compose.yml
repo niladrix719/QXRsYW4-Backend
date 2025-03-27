@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: niladrix719/qxrsyw4-backend:v1.0
     ports:
       - "8080:8080"
     env_file:
