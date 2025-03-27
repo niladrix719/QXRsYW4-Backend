@@ -15,7 +15,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET")) // Store this in an environment variable
+var jwtSecret = func() []byte {
+	if secret := os.Getenv("JWT_SECRET"); secret != "" {
+		return []byte(secret)
+	}
+	return []byte("secret")
+}()
 
 // CORSMiddleware configures CORS settings
 func CORSMiddleware() gin.HandlerFunc {
@@ -51,7 +56,6 @@ func GenerateJWT(username string) (string, error) {
 	return tokenString, nil
 }
 
-// AuthenticateJWT is a middleware function to protect routes
 func AuthenticateJWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
