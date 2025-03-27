@@ -62,3 +62,4 @@ jobs:
             curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "${{ secrets.DISCORD_WEBHOOK }}"
           else
             echo "✅ No flaky tests detected."
+          fi
