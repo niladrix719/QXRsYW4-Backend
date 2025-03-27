@@ -50,14 +50,23 @@ jobs:
 
             echo "➡️ Running test: $test"
             for i in {1..10}; do
+              echo "   Run #$i"
               OUTPUT=$(go test -run "^$test$" -v ./... 2>&1)
+              TEST_EXIT_CODE=$?
 
-              if echo "$OUTPUT" | grep -q "FAIL"; then
+              echo "   Full test output:"
+              echo "$OUTPUT"
+
+              # Check for test failures by looking for FAIL, error messages, and exit code
+              if [ $TEST_EXIT_CODE -ne 0 ] || echo "$OUTPUT" | grep -q -E "(FAIL|Expected an even number|--- FAIL: $test)"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
-                STACKTRACE=$(echo "$OUTPUT" | awk '/--- FAIL/ {flag=1} flag' | sed '/FAIL    /q')
-                STACKTRACE+="\n$(echo "$OUTPUT" | grep -E '^\s+\S+_test.go:\d+:')"
+                echo "   ❌ Test failed (Exit code: $TEST_EXIT_CODE)"
+                STACKTRACE="$OUTPUT"
+                echo "   Failure details:"
+                echo "$OUTPUT" | grep -E "(FAIL|Expected an even number|--- FAIL: $test)" || true
               else
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                echo "   ✅ Test passed"
               fi
             done
 
