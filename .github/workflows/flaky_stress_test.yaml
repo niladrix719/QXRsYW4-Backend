@@ -18,7 +18,7 @@ jobs:
         id: find_tests
         run: |
           git fetch origin main
-          NEW_TESTS=$(git diff origin/main -- '*.go' | grep -E '^\+' | grep -E 'func Test' | awk '{print $3}')
+          NEW_TESTS=$(git diff origin/main -- '*test.go' | grep -E '^\+' | grep -E 'func Test' | sed -E 's/.*func (Test[^(]+).*/\1/')
 
           if [ -z "$NEW_TESTS" ]; then
             echo "❌ No new tests found."
