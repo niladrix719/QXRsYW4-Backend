@@ -49,10 +49,12 @@ jobs:
 
             echo "➡️ Running test: $test"
             for i in {1..10}; do
-              OUTPUT=$(go test -run "^$test$" ./... 2>&1 || true)
+              OUTPUT=$(go test -run "^$test$" -v ./... 2>&1 || true)
+
               if echo "$OUTPUT" | grep -q "FAIL"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
-                STACKTRACE="$OUTPUT"  # Capture failure details
+                # Extract only the failing test's output
+                STACKTRACE=$(echo "$OUTPUT" | awk '/--- FAIL/ {flag=1} flag' | sed '/FAIL    /q')
               else
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               fi
