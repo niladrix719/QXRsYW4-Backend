@@ -1,0 +1,64 @@
+name: Detect Flaky Tests
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  detect-flaky-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.1'
+
+      - name: Set Up Go Modules
+        run: |
+          go mod tidy
+          go mod download
+
+      - name: Run Flaky Test Detection
+        run: |
+          LOG_FILE=flaky_tests.log
+          > "$LOG_FILE"  # Clear log file
+
+          echo "🔄 Running all tests multiple times to detect flakiness..."
+          go test ./... > full_test_output.log 2>&1 || true  # Capture full output
+
+          while IFS= read -r test; do
+            FAIL_COUNT=0
+            SUCCESS_COUNT=0
+            STACKTRACE=""
+
+            for i in {1..10}; do
+              OUTPUT=$(go test -run "^$test$" ./... 2>&1)
+              if echo "$OUTPUT" | grep -q "FAIL"; then
+                FAIL_COUNT=$((FAIL_COUNT + 1))
+                STACKTRACE="$OUTPUT"  # Capture stack trace of failure
+              else
+                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              fi
+            done
+
+            if [[ "$FAIL_COUNT" -gt 0 && "$SUCCESS_COUNT" -gt 0 ]]; then
+              echo "🚨 Flaky Test Detected: $test (Failures: $FAIL_COUNT/10)" >> "$LOG_FILE"
+              echo "Stack Trace:\n$STACKTRACE" >> "$LOG_FILE"
+              echo "----------------------------------" >> "$LOG_FILE"
+            fi
+          done < <(grep -oP 'func \KTest\w+' full_test_output.log | sort -u)
+
+      - name: Send Flaky Test Report to Discord
+        if: always()
+        run: |
+          if [ -s flaky_tests.log ]; then
+            PAYLOAD=$(jq -n --arg content "🚨 *Flaky Test Report*\n$(cat flaky_tests.log | sed 's/"/\\"/g')" '{content: $content}')
+            curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "${{ secrets.DISCORD_WEBHOOK }}"
+          else
+            echo "✅ No flaky tests detected."
+          fi
