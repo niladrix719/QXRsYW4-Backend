@@ -1,8 +1,10 @@
 package services
 
 import (
+	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 )
 
 // Helper function to reset the users slice before each test
@@ -66,5 +68,16 @@ func TestLoginUser(t *testing.T) {
 	}
 	if user != nil {
 		t.Errorf("Test Case 3 Failed: Should not have returned a user for non-existent username")
+	}
+}
+
+func TestFlakyRandom(t *testing.T) {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	random := rng.Intn(10)
+	t.Logf("Generated number: %d", random)
+
+	// Test for even number
+	if random%2 != 0 {
+		t.Errorf("Expected an even number, but got %d", random)
 	}
 }
