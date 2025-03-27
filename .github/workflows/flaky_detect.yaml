@@ -55,6 +55,8 @@ jobs:
               if echo "$OUTPUT" | grep -q "FAIL"; then
                 FAIL_COUNT=$((FAIL_COUNT + 1))
                 STACKTRACE+="$(echo "$OUTPUT" | awk '/--- FAIL/,/FAIL    /')\n"
+                # Ensure detailed failure messages are included
+                STACKTRACE+="\n$(echo "$OUTPUT" | grep -E '^\s+\S+_test.go:\d+:')"
               else
                 SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
               fi
