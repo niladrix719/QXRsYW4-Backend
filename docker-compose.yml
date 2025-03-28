@@ -1,11 +1,16 @@
+version: '3.8'
+
 services:
-  app:
+  golang-app:
     build:
       context: .
       dockerfile: Dockerfile
     image: niladrix719/qxrsyw4-backend:v1.0
+    container_name: golang-app
     ports:
       - "8080:8080"
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - qxrsyw4-network

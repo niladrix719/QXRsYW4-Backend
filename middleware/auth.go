@@ -25,14 +25,9 @@ var jwtSecret = func() []byte {
 // CORSMiddleware configures CORS settings
 func CORSMiddleware() gin.HandlerFunc {
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{
-		"http://localhost:5173",
-		"http://127.0.0.1:5173",
-		"http://localhost",
-		"http://localhost:80",
-		"http://host.docker.internal",
-		"http://host.docker.internal:80",
-	}
+	config.AllowOrigins = []string{"*"}
+	config.AllowAllOrigins = true
+
 	config.AllowCredentials = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
