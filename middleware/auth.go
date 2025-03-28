@@ -25,9 +25,11 @@ var jwtSecret = func() []byte {
 // CORSMiddleware configures CORS settings
 func CORSMiddleware() gin.HandlerFunc {
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"}
-	config.AllowAllOrigins = true
-
+	config.AllowOrigins = []string{
+		"http://localhost:5173",
+		"http://127.0.0.1:5173",
+		"http://vue-service:5173",
+	}
 	config.AllowCredentials = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
