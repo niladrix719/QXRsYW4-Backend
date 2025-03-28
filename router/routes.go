@@ -13,7 +13,7 @@ import (
 // SetupRouter configures the application routes
 func SetupRouter(r *gin.Engine) {
 	// health check endpoint
-	r.GET("/health", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
